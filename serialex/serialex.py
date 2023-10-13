@@ -3,21 +3,15 @@ import argparse
 import serial
 import signal
 import threading
-import selectors
 
 # abort flag (global)
 g_abort_service = False
-
-# wakeup pipe (global)
-g_wakeup_write = None
 
 # sigint handler
 def sigint_handler(signum, frame):
   print("CTRL-C is pressed. Stopping the service.")
   global g_abort_service
   g_abort_service = True
-  global g_wakeup_write
-  os.write(g_wakeup_write, b'1')
 
 # serial event handler
 def serial_event_handler(source_serial_port, target_serial_port):
@@ -49,14 +43,9 @@ def run_service(serial_device0, serial_device1, serial_baudrate):
                       rtscts = False,
                       dsrdtr = False ) as serial_port1:
 
-      # pipe for select loop breaking
-      wakeup_read, wakeup_write = os.pipe()
-
       # set sigterm handler
       global g_abort_service
       g_abort_service = False
-      global g_wakeup_write
-      g_wakeup_write = wakeup_write
       signal.signal(signal.SIGINT, sigint_handler)
 
       # thread for serial port 0
@@ -69,27 +58,11 @@ def run_service(serial_device0, serial_device1, serial_baudrate):
 
       print(f"Started. (serial_device0={serial_device0}, serial_device1={serial_device1},baudrate={serial_baudrate})")
 
-      # IO selector
-      selector = selectors.DefaultSelector()
-      selector.register(wakeup_read, selectors.EVENT_READ)
+      th0.join()
+      th1.join()
 
-      # main loop
-      try:
-        while g_abort_service is False:
-          events = selector.select()
-          for key, mask in events:
-            if key.fileobj == wakeup_read:
-              os.read(wakeup_read, 1)
-      except Exception as e:
-        print(e)
-      finally:
-        th0.join()
-        th1.join()
-        serial_port0.close()
-        serial_port1.close()
-        selector.close()
-        os.close(wakeup_read)
-        os.close(wakeup_write)
+      serial_port0.close()
+      serial_port1.close()
 
       print("Stopped.")
 
