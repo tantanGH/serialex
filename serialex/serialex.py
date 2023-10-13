@@ -18,71 +18,6 @@ def sigint_handler(signum, frame):
   global g_wakeup_write
   os.write(g_wakeup_write, b'1')
 
-# service loop
-def run_service(serial_device0, serial_device1, serial_baudrate):
-
-  # open serial port0
-  with serial.Serial(serial_device0, serial_baudrate,
-                     bytesize = serial.EIGHTBITS,
-                     parity = serial.PARITY_NONE,
-                     stopbits = serial.STOPBITS_ONE,
-                     timeout = 120,
-                     xonxoff = False,
-                     rtscts = False,
-                     dsrdtr = False ) as serial_port0:
-
-    with serial.Serial(serial_device1, serial_baudrate,
-                      bytesize = serial.EIGHTBITS,
-                      parity = serial.PARITY_NONE,
-                      stopbits = serial.STOPBITS_ONE,
-                      timeout = 120,
-                      xonxoff = False,
-                      rtscts = False,
-                      dsrdtr = False ) as serial_port1:
-
-      # pipe for select loop breaking
-      wakeup_read, wakeup_write = os.pipe()
-
-      # set sigterm handler
-      global g_abort_service
-      g_abort_service = False
-      global g_wakeup_write
-      g_wakeup_write = wakeup_write
-      signal.signal(signal.SIGINT, sigint_handler)
-
-      # IO selector
-      selector = selectors.DefaultSelector()
-      selector.register(serial_port0, selectors.EVENT_READ, serial_event_handler)
-      selector.register(serial_port1, selectors.EVENT_READ, serial_event_handler)
-      selector.register(wakeup_read, selectors.EVENT_READ)
-
-      print(f"Started. (serial_device0={serial_device0}, serial_device1={serial_device1},baudrate={serial_baudrate})")
-
-      try:
-        while g_abort_service is False:
-          events = selector.select()
-          for key, mask in events:
-            if key.fileobj == serial_port0:
-              callback = key.data
-              callback(key, mask, serial_port1)
-            elif key.fileobj == serial_port1:
-              callback = key.data
-              callback(key, mask, serial_port0)
-            elif key.fileobj == wakeup_read:
-              os.read(wakeup_read, 1)
-      except Exception as e:
-        print(e)
-      finally:
-        selector.unregister(serial_port0)
-        selector.unregister(serial_port1)
-        selector.close()
-        serial_port0.close()
-        serial_port1.close()
-        os.close(wakeup_read)
-        os.close(wakeup_write)
-
-      print("Stopped.")
-
 # serial event handler
 def serial_event_handler(source_serial_port, target_serial_port):
   global g_abort_service
@@ -91,7 +26,7 @@ def serial_event_handler(source_serial_port, target_serial_port):
       data = source_serial_port.read_all()
       target_serial_port.write(data)
 
-# service loop2
+# service loop
 def run_service(serial_device0, serial_device1, serial_baudrate):
 
   # open serial port0
@@ -137,7 +72,7 @@ def run_service(serial_device0, serial_device1, serial_baudrate):
       selector = selectors.DefaultSelector()
       selector.register(wakeup_read, selectors.EVENT_READ)
 
-      # service loop
+      # main loop
       try:
         while g_abort_service is False:
           events = selector.select()
