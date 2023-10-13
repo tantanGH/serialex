@@ -3,6 +3,7 @@ import argparse
 import serial
 import signal
 import threading
+import selectors
 
 # abort flag (global)
 g_abort_service = False
