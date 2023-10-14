@@ -22,7 +22,7 @@ def serial_event_handler(source_serial_port, target_serial_port):
       target_serial_port.write(data)
 
 # service loop
-def run_service(serial_device0, serial_device1, serial_baudrate):
+def run_service(serial_device0, serial_device1, serial_baudrate, use_xonxoff):
 
   # open serial port0
   with serial.Serial(serial_device0, serial_baudrate,
@@ -30,7 +30,7 @@ def run_service(serial_device0, serial_device1, serial_baudrate):
                      parity = serial.PARITY_NONE,
                      stopbits = serial.STOPBITS_ONE,
                      timeout = 120,
-                     xonxoff = False,
+                     xonxoff = use_xonxoff,
                      rtscts = False,
                      dsrdtr = False ) as serial_port0:
 
@@ -39,7 +39,7 @@ def run_service(serial_device0, serial_device1, serial_baudrate):
                       parity = serial.PARITY_NONE,
                       stopbits = serial.STOPBITS_ONE,
                       timeout = 120,
-                      xonxoff = False,
+                      xonxoff = use_xonxoff,
                       rtscts = False,
                       dsrdtr = False ) as serial_port1:
 
@@ -72,10 +72,11 @@ def main():
   parser.add_argument("serial_device0", help="serial device#0")
   parser.add_argument("serial_device1", help="serial device#1")
   parser.add_argument("-s", "--baudrate", help="baud rate (default:9600)", type=int, default=9600)
+  parser.add_argument("-x", "--xonxoff", help="use xon/xoff", action='store_true')
  
   args = parser.parse_args()
 
-  return run_service(args.serial_device0, args.serial_device1, args.baudrate)
+  return run_service(args.serial_device0, args.serial_device1, args.baudrate, args.xonxoff)
 
 if __name__ == "__main__":
   main()
