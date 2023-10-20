@@ -22,7 +22,7 @@ def serial_event_handler(source_serial_port, target_serial_port, verbose):
       if len(data) > 0:
         target_serial_port.write(data)
         if verbose:
-          print(data)
+          print(data, end="")
 
 # service loop
 def run_service(serial_device0, serial_device1, serial_baudrate, verbose):
