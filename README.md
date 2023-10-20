@@ -8,4 +8,4 @@ Serial Data Exchanger
 
 ## Usage
 
-    serialex [-s baudrate] <serial-device0> <serial-device1>
+    serialex [-s baudrate] [-v] <serial-device0> <serial-device1>
