@@ -19,9 +19,10 @@ def serial_event_handler(source_serial_port, target_serial_port, verbose):
   while g_abort_service is False:
     if source_serial_port.in_waiting > 0:
       data = source_serial_port.read_all()
-      target_serial_port.write(data)
-      if verbose:
-        print(data)
+      if len(data) > 0:
+        target_serial_port.write(data)
+        if verbose:
+          print(data)
 
 # service loop
 def run_service(serial_device0, serial_device1, serial_baudrate, verbose):
